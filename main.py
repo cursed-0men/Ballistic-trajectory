@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 # Constants
 GRAVITY = 9.81    # Acceleration due to gravity (m/s^2)
@@ -58,31 +59,60 @@ def calculate_trajectory(initial_velocity, launch_angle):
     
     return positions, velocities
 
-# Function to plot the trajectory and velocity
-def plot_trajectory_and_velocity(positions, velocities):
-    x_vals, y_vals = zip(*positions)
+# Function to animate the projectile's trajectory with more realistic visuals
+# Function to animate the projectile's trajectory with more realistic visuals
+def animate_trajectory(positions, velocities, initial_velocity, launch_angle):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_xlim(0, max([pos[0] for pos in positions]) * 1.1)  # Set x-axis limits
+    ax.set_ylim(0, max([pos[1] for pos in positions]) * 1.1)  # Set y-axis limits
+    ax.set_title(f"Projectile Trajectory - Velocity: {initial_velocity} m/s, Angle: {launch_angle}°", fontsize=14)
+    ax.set_xlabel('Distance (m)')
+    ax.set_ylabel('Height (m)')
     
-    # Plotting trajectory
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.plot(x_vals, y_vals, label="Projectile Trajectory", color="r")
-    plt.title("Projectile Trajectory")
-    plt.xlabel("Distance (m)")
-    plt.ylabel("Height (m)")
-    plt.grid(True)
-    plt.legend()
+    # Add grid and background
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    ax.set_facecolor('lightblue')
+    
+    # Plotting the initial velocity vector
+    velocity_vector, = ax.plot([], [], 'g-', lw=2, label="Velocity Vector")
+    trajectory_line, = ax.plot([], [], 'r-', label="Trajectory Path")
+    projectile_marker, = ax.plot([], [], 'bo', label="Projectile")
+    
+    # Function to update the animation
+    def update(frame):
+        # Update the projectile's position and the velocity vector
+        trajectory_line.set_data([pos[0] for pos in positions[:frame]], [pos[1] for pos in positions[:frame]])
+        
+        # Use lists even for a single point
+        projectile_marker.set_data([positions[frame][0]], [positions[frame][1]])
+        
+        # Dynamically update velocity vector based on the current velocity direction
+        velocity_x, velocity_y = positions[frame][0] - positions[frame-1][0], positions[frame][1] - positions[frame-1][1]
+        velocity_angle = np.arctan2(velocity_y, velocity_x)
+        velocity_magnitude = velocities[frame]
+        
+        # Update velocity vector with dynamic angle
+        current_velocity_x = velocity_magnitude * np.cos(velocity_angle)
+        current_velocity_y = velocity_magnitude * np.sin(velocity_angle)
+        
+        velocity_vector.set_data([positions[frame][0], positions[frame][0] + current_velocity_x * 0.2], 
+                                 [positions[frame][1], positions[frame][1] + current_velocity_y * 0.2])
+        
+        return trajectory_line, velocity_vector, projectile_marker
 
-    # Plotting velocity
-    time_vals = np.linspace(0, len(velocities)*0.01, len(velocities))  # Time values for the plot
-    plt.subplot(1, 2, 2)
-    plt.plot(time_vals, velocities, label="Velocity (m/s)", color="b")
-    plt.title("Projectile Velocity Over Time")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Velocity (m/s)")
-    plt.grid(True)
+    # Creating the animation (set blit=False for simpler updates)
+    ani = FuncAnimation(fig, update, frames=len(positions), interval=50, blit=False)
+    
+    # Show the animation
     plt.legend()
+    plt.show()
 
-    plt.tight_layout()
+
+    # Creating the animation
+    ani = FuncAnimation(fig, update, frames=len(positions), interval=50, blit=True)
+    
+    # Show the animation
+    plt.legend()
     plt.show()
 
 # Main function
@@ -94,5 +124,5 @@ if __name__ == "__main__":
     # Calculate trajectory and velocities
     positions, velocities = calculate_trajectory(initial_velocity, launch_angle)
     
-    # Plot the trajectory and velocity over time
-    plot_trajectory_and_velocity(positions, velocities)
+    # Animate the projectile's trajectory and velocity
+    animate_trajectory(positions, velocities, initial_velocity, launch_angle)
