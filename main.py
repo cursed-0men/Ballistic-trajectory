@@ -15,26 +15,32 @@ def calculate_drag_force(velocity):
     drag_force = 0.5 * AIR_DENSITY * DRAG_COEFFICIENT * area * velocity**2
     return drag_force
 
-# Function to calculate the trajectory of the projectile
-def calculate_trajectory(initial_velocity, launch_angle):
-    # Convert angle to radians
+# Function to calculate the trajectory of the projectile from a height or inclined launch
+def calculate_trajectory(initial_velocity, launch_angle, height=0.0, incline_angle=0.0):
+    # Convert angles to radians
     angle_rad = np.radians(launch_angle)
+    incline_rad = np.radians(incline_angle)
     
-    # Initial velocities in x and y directions
-    initial_velocity_x = initial_velocity * np.cos(angle_rad)
-    initial_velocity_y = initial_velocity * np.sin(angle_rad)
+    # Initial velocities in x and y directions (for incline, use angle adjustment)
+    initial_velocity_x = initial_velocity * np.cos(angle_rad) * (1 if incline_angle == 0 else np.cos(incline_rad))
+    initial_velocity_y = initial_velocity * np.sin(angle_rad) * (1 if incline_angle == 0 else np.sin(incline_rad))
     
     # Time step for simulation
     dt = 0.01
     
     # Initial conditions
-    x, y = 0.0, 0.0  # Initial horizontal and vertical positions (m)
+    x, y = 0.0, height  # Launch height for heighted case
     velocity_x, velocity_y = initial_velocity_x, initial_velocity_y  # Initial velocities (m/s)
     
     time = 0.0
     positions = []  # To store position values for visualization
     velocities = []  # To store velocity values for each time step
     
+    # Max stats
+    max_height = height
+    max_range = 0
+    max_velocity = 0
+
     # Simulate projectile motion
     while y >= 0:  # Stop if the projectile hits the ground
         velocity = np.sqrt(velocity_x**2 + velocity_y**2)
@@ -56,10 +62,29 @@ def calculate_trajectory(initial_velocity, launch_angle):
         positions.append((x, y))
         velocities.append(np.sqrt(velocity_x**2 + velocity_y**2))
         time += dt
+
+        # Update max stats
+        max_height = max(max_height, y)
+        max_range = max(max_range, x)
+        max_velocity = max(max_velocity, velocity)
+        
+        # Print stats every 1 second (or every specific time)
+        if int(time) % 1 == 0:  # Every 1 second
+            print(f"Time: {int(time)}s - Height: {y:.2f} m, Velocity: {velocity:.2f} m/s, Max Height: {max_height:.2f} m, Max Range: {max_range:.2f} m, Max Velocity: {max_velocity:.2f} m/s")
+
+    # Calculate final stats at the end of the trajectory
+    final_velocity = velocities[-1]  # Final velocity magnitude
+    total_time_of_flight = time  # Total time of flight
+    
+    # Print final stats in green with 2 precision
+    print(f"\033[32m\nFinal Stats:")
+    print(f"Max Height: {max_height:.2f} meters")
+    print(f"Range: {max_range:.2f} meters")
+    print(f"Final Impact Velocity: {final_velocity:.2f} m/s")
+    print(f"Total Time of Flight: {total_time_of_flight:.2f} seconds\033[0m")
     
     return positions, velocities
 
-# Function to animate the projectile's trajectory with more realistic visuals
 # Function to animate the projectile's trajectory with more realistic visuals
 def animate_trajectory(positions, velocities, initial_velocity, launch_angle):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -107,22 +132,28 @@ def animate_trajectory(positions, velocities, initial_velocity, launch_angle):
     plt.legend()
     plt.show()
 
-
-    # Creating the animation
-    ani = FuncAnimation(fig, update, frames=len(positions), interval=50, blit=True)
-    
-    # Show the animation
-    plt.legend()
-    plt.show()
-
 # Main function
 if __name__ == "__main__":
-    # Input: Initial velocity and launch angle
+    # Choose the type of launch
+    launch_type = input("Choose launch type: (1) Regular (SAS) (2) Heighted (3) Inclined: ")
+
+    # Input initial velocity and launch angle
     initial_velocity = float(input("Enter initial velocity (m/s): "))
     launch_angle = float(input("Enter launch angle (degrees): "))
     
-    # Calculate trajectory and velocities
-    positions, velocities = calculate_trajectory(initial_velocity, launch_angle)
+    # Handle heighted or inclined case
+    if launch_type == '2':  # Heighted case
+        height = float(input("Enter the height from which the projectile is launched (m): "))
+        incline_angle = 0  # No incline
+        positions, velocities = calculate_trajectory(initial_velocity, launch_angle, height)
+    elif launch_type == '3':  # Inclined case
+        height = 0  # Starting from ground level
+        incline_angle = float(input("Enter the incline angle (degrees): "))
+        positions, velocities = calculate_trajectory(initial_velocity, launch_angle, height, incline_angle)
+    else:  # Regular case
+        height = 0
+        incline_angle = 0
+        positions, velocities = calculate_trajectory(initial_velocity, launch_angle)
     
     # Animate the projectile's trajectory and velocity
     animate_trajectory(positions, velocities, initial_velocity, launch_angle)
