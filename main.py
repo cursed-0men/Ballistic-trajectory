@@ -8,11 +8,13 @@ AIR_DENSITY = 1.225  # Air density at sea level (kg/m^3)
 DRAG_COEFFICIENT = 0.47  # Drag coefficient for a spherical projectile
 PROJECTILE_RADIUS = 0.05  # Projectile radius (m)
 PROJECTILE_MASS = 1.0    # Mass of the projectile (kg)
+WIND_VELOCITY = 2.0  # Wind velocity in m/s (horizontal component)
 
-# Function to calculate drag force
-def calculate_drag_force(velocity):
+# Function to calculate drag force (with wind effect)
+def calculate_drag_force(velocity, wind_velocity=0.0):
+    relative_velocity = velocity - wind_velocity  # Adjust velocity for wind
     area = np.pi * PROJECTILE_RADIUS**2  # Cross-sectional area (m^2)
-    drag_force = 0.5 * AIR_DENSITY * DRAG_COEFFICIENT * area * velocity**2
+    drag_force = 0.5 * AIR_DENSITY * DRAG_COEFFICIENT * area * relative_velocity**2
     return drag_force
 
 # Function to calculate the trajectory of the projectile from a height or inclined launch
@@ -44,7 +46,7 @@ def calculate_trajectory(initial_velocity, launch_angle, height=0.0, incline_ang
     # Simulate projectile motion
     while y >= 0:  # Stop if the projectile hits the ground
         velocity = np.sqrt(velocity_x**2 + velocity_y**2)
-        drag_force = calculate_drag_force(velocity)
+        drag_force = calculate_drag_force(velocity, WIND_VELOCITY)
         
         # Calculate drag accelerations
         drag_acceleration_x = drag_force * (velocity_x / velocity) / PROJECTILE_MASS
@@ -67,42 +69,79 @@ def calculate_trajectory(initial_velocity, launch_angle, height=0.0, incline_ang
         max_height = max(max_height, y)
         max_range = max(max_range, x)
         max_velocity = max(max_velocity, velocity)
-        
-        # Print stats every 1 second (or every specific time)
-        if int(time) % 1 == 0:  # Every 1 second
-            print(f"Time: {int(time)}s - Height: {y:.2f} m, Velocity: {velocity:.2f} m/s, Max Height: {max_height:.2f} m, Max Range: {max_range:.2f} m, Max Velocity: {max_velocity:.2f} m/s")
 
     # Calculate final stats at the end of the trajectory
     final_velocity = velocities[-1]  # Final velocity magnitude
     total_time_of_flight = time  # Total time of flight
     
-    # Print final stats in green with 2 precision
+    # Print final stats
     print(f"\033[32m\nFinal Stats:")
     print(f"Max Height: {max_height:.2f} meters")
     print(f"Range: {max_range:.2f} meters")
     print(f"Final Impact Velocity: {final_velocity:.2f} m/s")
     print(f"Total Time of Flight: {total_time_of_flight:.2f} seconds\033[0m")
     
-    return positions, velocities
+    return positions, velocities, max_height, max_range, max_velocity
 
 # Function to animate the projectile's trajectory with more realistic visuals
-def animate_trajectory(positions, velocities, initial_velocity, launch_angle):
+def animate_trajectory(positions, velocities, initial_velocity, launch_angle, max_height, max_range, max_velocity, launch_type):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.set_xlim(0, max([pos[0] for pos in positions]) * 1.1)  # Set x-axis limits
     ax.set_ylim(0, max([pos[1] for pos in positions]) * 1.1)  # Set y-axis limits
-    ax.set_title(f"Projectile Trajectory - Velocity: {initial_velocity} m/s, Angle: {launch_angle}°", fontsize=14)
-    ax.set_xlabel('Distance (m)')
-    ax.set_ylabel('Height (m)')
+    ax.set_title(f"Projectile Trajectory - Velocity: {initial_velocity} m/s, Angle: {launch_angle}°", fontsize=16, fontweight='bold', color='#333')
+    ax.set_xlabel('Distance (m)', fontsize=12, color='#444')
+    ax.set_ylabel('Height (m)', fontsize=12, color='#444')
     
-    # Add grid and background
-    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax.set_facecolor('lightblue')
+    # Background gradient
+    ax.set_facecolor('#e0f7fa')
+    
+    # Add grid with subtle lines
+    ax.grid(True, which='both', linestyle='-', linewidth=0.3, color='#aaa')
+    
+    # Customizable styling for annotations
+    annotation_style = {'fontsize': 12, 'fontweight': 'bold', 'color': '#2e3d49'}
     
     # Plotting the initial velocity vector
     velocity_vector, = ax.plot([], [], 'g-', lw=2, label="Velocity Vector")
-    trajectory_line, = ax.plot([], [], 'r-', label="Trajectory Path")
-    projectile_marker, = ax.plot([], [], 'bo', label="Projectile")
+    trajectory_line, = ax.plot([], [], 'r-', label="Trajectory Path", lw=2)
+    projectile_marker, = ax.plot([], [], 'ro', label="Projectile", markersize=8, markeredgecolor='black', markerfacecolor='orange')
     
+    # Annotating the max height, max range, and max velocity on the plot
+    if launch_type == '2':  # Heighted case
+        height_offset = 10
+        range_offset = 0
+    elif launch_type == '3':  # Inclined case
+        height_offset = 15
+        range_offset = 10  # Slightly further for inclined trajectories
+    else:  # Regular case
+        height_offset = 5
+        range_offset = 0
+
+    ax.annotate(f"Max Height: {max_height:.2f} m", 
+                xy=(max_range * 0.5, max_height + height_offset), 
+                xytext=(max_range * 0.5, max_height + height_offset + 5),
+                arrowprops=dict(facecolor='red', shrink=0.05), 
+                **annotation_style)
+
+    # For inclined trajectory, adjust the range annotation placement
+    if launch_type == '3':
+        ax.annotate(f"Range: {max_range:.2f} m", 
+                    xy=(max_range * 0.9, 0),  # Adjusted for inclined trajectory
+                    xytext=(max_range * 0.7, 5),
+                    arrowprops=dict(facecolor='blue', shrink=0.05), 
+                    **annotation_style)
+    else:
+        ax.annotate(f"Range: {max_range:.2f} m", 
+                    xy=(max_range + range_offset, 0), 
+                    xytext=(max_range * 0.5, 10),
+                    arrowprops=dict(facecolor='blue', shrink=0.05), 
+                    **annotation_style)
+
+    ax.annotate(f"Max Speed: {max_velocity:.2f} m/s", 
+                xy=(max_range * 0.5, max_height * 0.9), 
+                xytext=(max_range * 0.3, max_height * 0.8), 
+                **annotation_style)
+
     # Function to update the animation
     def update(frame):
         # Update the projectile's position and the velocity vector
@@ -120,40 +159,40 @@ def animate_trajectory(positions, velocities, initial_velocity, launch_angle):
         current_velocity_x = velocity_magnitude * np.cos(velocity_angle)
         current_velocity_y = velocity_magnitude * np.sin(velocity_angle)
         
-        velocity_vector.set_data([positions[frame][0], positions[frame][0] + current_velocity_x * 0.2], 
-                                 [positions[frame][1], positions[frame][1] + current_velocity_y * 0.2])
+        velocity_vector.set_data([positions[frame][0], positions[frame][0] + current_velocity_x],
+                                 [positions[frame][1], positions[frame][1] + current_velocity_y])
         
-        return trajectory_line, velocity_vector, projectile_marker
-
-    # Creating the animation (set blit=False for simpler updates)
-    ani = FuncAnimation(fig, update, frames=len(positions), interval=50, blit=False)
+        return trajectory_line, projectile_marker, velocity_vector
     
-    # Show the animation
-    plt.legend()
+    # Animate the trajectory
+    ani = FuncAnimation(fig, update, frames=len(positions), interval=30, repeat=False)
+    
+    # Place the legend outside the plot to avoid interrupting the animation view
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=10, title="Legend", title_fontsize='13', frameon=False)
+
     plt.show()
 
-# Main function
-if __name__ == "__main__":
-    # Choose the type of launch
-    launch_type = input("Choose launch type: (1) Regular (SAS) (2) Heighted (3) Inclined: ")
+# Example usage with user input as before
+launch_type = input("Enter launch type (1 for regular, 2 for heighted, 3 for inclined): ")
 
-    # Input initial velocity and launch angle
+if launch_type == '2':  # Heighted
     initial_velocity = float(input("Enter initial velocity (m/s): "))
-    launch_angle = float(input("Enter launch angle (degrees): "))
-    
-    # Handle heighted or inclined case
-    if launch_type == '2':  # Heighted case
-        height = float(input("Enter the height from which the projectile is launched (m): "))
-        incline_angle = 0  # No incline
-        positions, velocities = calculate_trajectory(initial_velocity, launch_angle, height)
-    elif launch_type == '3':  # Inclined case
-        height = 0  # Starting from ground level
-        incline_angle = float(input("Enter the incline angle (degrees): "))
-        positions, velocities = calculate_trajectory(initial_velocity, launch_angle, height, incline_angle)
-    else:  # Regular case
-        height = 0
-        incline_angle = 0
-        positions, velocities = calculate_trajectory(initial_velocity, launch_angle)
-    
-    # Animate the projectile's trajectory and velocity
-    animate_trajectory(positions, velocities, initial_velocity, launch_angle)
+    launch_angle = float(input("Enter the launch angle (degrees): "))
+    height = float(input("Enter initial height (m): "))
+    incline_angle = 0
+elif launch_type == '3':  # Inclined
+    initial_velocity = float(input("Enter initial velocity (m/s): "))
+    launch_angle = float(input("Enter the launch angle (degrees): "))
+    height = 0
+    incline_angle = float(input("Enter incline angle (degrees): "))
+else:  # Regular
+    initial_velocity = float(input("Enter initial velocity (m/s): "))
+    launch_angle = float(input("Enter the launch angle (degrees): "))
+    height = 0
+    incline_angle = 0
+
+# Calculate trajectory
+positions, velocities, max_height, max_range, max_velocity = calculate_trajectory(initial_velocity, launch_angle, height, incline_angle)
+
+# Animate the trajectory
+animate_trajectory(positions, velocities, initial_velocity, launch_angle, max_height, max_range, max_velocity, launch_type)
