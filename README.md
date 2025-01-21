@@ -5,12 +5,12 @@ A visually interactive simulation of ballistic trajectories, showcasing the effe
 ---
 
 ## 📜 Table of Contents
-- [Introduction](#introduction-)
-- [Features](#features-)
-- [Images](#images-)
-- [How to Use](#how-to-use-)
-- [Technical Details](#technical-details-)
-- [Contributing](#contributing-)
+- [Introduction](#introduction)
+- [Features](#features)
+- [Images](#images)
+- [How to Use](#how-to-use)
+- [Technical Details](#technical-details)
+- [Contributing](#contributing)
 
 
 ---
