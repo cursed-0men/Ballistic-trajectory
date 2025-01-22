@@ -98,49 +98,10 @@ def animate_trajectory(positions, velocities, initial_velocity, launch_angle, ma
     # Add grid with subtle lines
     ax.grid(True, which='both', linestyle='-', linewidth=0.3, color='#aaa')
     
-    # Customizable styling for annotations
-    annotation_style = {'fontsize': 12, 'fontweight': 'bold', 'color': '#2e3d49'}
-    
     # Plotting the initial velocity vector
     velocity_vector, = ax.plot([], [], 'g-', lw=2, label="Velocity Vector")
     trajectory_line, = ax.plot([], [], 'r-', label="Trajectory Path", lw=2)
     projectile_marker, = ax.plot([], [], 'ro', label="Projectile", markersize=8, markeredgecolor='black', markerfacecolor='orange')
-    
-    # Annotating the max height, max range, and max velocity on the plot
-    if launch_type == '2':  # Heighted case
-        height_offset = 10
-        range_offset = 0
-    elif launch_type == '3':  # Inclined case
-        height_offset = 15
-        range_offset = 10  # Slightly further for inclined trajectories
-    else:  # Regular case
-        height_offset = 5
-        range_offset = 0
-
-    ax.annotate(f"Max Height: {max_height:.2f} m", 
-                xy=(max_range * 0.5, max_height + height_offset), 
-                xytext=(max_range * 0.5, max_height + height_offset + 5),
-                arrowprops=dict(facecolor='red', shrink=0.05), 
-                **annotation_style)
-
-    # For inclined trajectory, adjust the range annotation placement
-    if launch_type == '3':
-        ax.annotate(f"Range: {max_range:.2f} m", 
-                    xy=(max_range * 0.9, 0),  # Adjusted for inclined trajectory
-                    xytext=(max_range * 0.7, 5),
-                    arrowprops=dict(facecolor='blue', shrink=0.05), 
-                    **annotation_style)
-    else:
-        ax.annotate(f"Range: {max_range:.2f} m", 
-                    xy=(max_range + range_offset, 0), 
-                    xytext=(max_range * 0.5, 10),
-                    arrowprops=dict(facecolor='blue', shrink=0.05), 
-                    **annotation_style)
-
-    ax.annotate(f"Max Speed: {max_velocity:.2f} m/s", 
-                xy=(max_range * 0.5, max_height * 0.9), 
-                xytext=(max_range * 0.3, max_height * 0.8), 
-                **annotation_style)
 
     # Function to update the animation
     def update(frame):
