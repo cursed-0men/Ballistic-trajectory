@@ -34,7 +34,7 @@ This project simulates the motion of a projectile using real-world physics. By a
 Below are sample visuals of the simulation:
 
 ### 1. Regular Trajectory
-![Regular Trajectory](./images/regular.png)
+![Regular Trajectory](./images/normal.png)
 
 ---
 
