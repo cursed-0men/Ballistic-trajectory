@@ -1,4 +1,4 @@
-# 🎯 Ballistic Trajectory
+# 🎯 Projectile Trajectory
 
 A visually interactive simulation of ballistic trajectories, showcasing the effect of various parameters like velocity, angle, and height on the projectile's motion. 🚀
 
